@@ -32,6 +32,8 @@ export default class App extends React.Component {
     this.oldPosition = {};
     this.position = new Animated.ValueXY();
     this.dimensions = new Animated.ValueXY();
+    this.animation = new Animated.Value(0);
+    this.activeImageStyle = null;
   }
 
   openImage = (index) => {
@@ -59,11 +61,30 @@ export default class App extends React.Component {
             Animated.timing(this.position.x, { toValue: dPageX, duration: 300 }),
             Animated.timing(this.position.y, { toValue: dPageY, duration: 300 }),
             Animated.timing(this.dimensions.x, { toValue: dWidth, duration: 300 }),
-            Animated.timing(this.dimensions.y, { toValue: dHeight, duration: 300 })
+            Animated.timing(this.dimensions.y, { toValue: dHeight, duration: 300 }),
+            Animated.timing(this.animation, {
+              toValue: 1,
+              duration: 300
+            })
           ]).start()
         })
       });
     });
+  }
+
+  closeImage = () => {
+    Animated.parallel([
+      Animated.timing(this.position.x, { toValue: this.oldPosition.x, duration: 300 }),
+      Animated.timing(this.position.y, { toValue: this.oldPosition.y, duration: 300 }),
+      Animated.timing(this.dimensions.x, { toValue: this.oldPosition.width, duration: 300 }),
+      Animated.timing(this.dimensions.y, { toValue: this.oldPosition.height, duration: 300 }),
+      Animated.timing(this.animation, {
+        toValue: 0,
+        duration: 300
+      })
+    ]).start((() => {
+      this.setState({ activeImage: null });
+    }));
   }
 
   render() {
@@ -72,6 +93,27 @@ export default class App extends React.Component {
       height: this.dimensions.y,
       left: this.position.x,
       top: this.position.y
+    };
+
+    const animatedContentY = this.animation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-150, 0]
+    });
+
+    const animatedContentOpacity = this.animation.interpolate({
+      inputRange: [0, 0.5, 1], 
+      outputRange: [0, 1, 1]
+    });
+
+    const animatedContentStyle = {
+      opacity: animatedContentOpacity,
+      transform: [{
+        translateY: animatedContentY
+      }]
+    }
+
+    const animatedCrossOpacity = {
+      opacity: this.animation
     };
 
     return (
@@ -97,14 +139,24 @@ export default class App extends React.Component {
         <View style={StyleSheet.absoluteFill}
           pointerEvents={this.state.activeImage ? "auto" : "none"}
         >
-          <View style={{ flex: 2, borderWidth: 1 }} ref={(view) => (this.viewImage = view)}>
+          <View style={{ flex: 2, zIndex: 1001 }} ref={(view) => (this.viewImage = view)}>
             <Animated.Image
               source={this.state.activeImage ? this.state.activeImage.src : null}
-              style={[{ resizeMode: 'cover', top: 0, left: 0, height: null }, activeImageStyle]}
+              style={[{ resizeMode: 'cover', top: 0, left: 0, height: null, borderRadius: 20 }, activeImageStyle]}
             >
             </Animated.Image>
-
+            <TouchableWithoutFeedback onPress={ () => this.closeImage() }>
+              <Animated.View style={[{ position: 'absolute', top: 30, right: 30 }, animatedCrossOpacity]}>
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>x</Text>
+              </Animated.View>
+            </TouchableWithoutFeedback>
           </View>
+          <Animated.View style={[{ flex: 1, zIndex: 1000, backgroundColor: 'white', padding: 20, paddingTop: 50 }, animatedContentStyle]}>
+            <Text style={{ fontSize: 24, paddingBottom: 10 }}>Guaxupé</Text>
+            <Text>
+              Elit aute ullamco eiusmod minim proident aliqua laborum est. Aliquip voluptate sit proident excepteur anim do eu eiusmod. Do nostrud anim amet ut deserunt ea. Ipsum quis cillum laboris do id do commodo. Non aliquip excepteur ullamco esse sunt est quis in commodo duis magna ut pariatur. Duis cillum aliquip sint elit esse ullamco nulla fugiat aliquip ad.
+            </Text>
+          </Animated.View>
         </View>
       </SafeAreaView>
     );
